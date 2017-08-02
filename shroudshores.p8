@@ -10,23 +10,32 @@ player = {
 		colr = 2
 }
 
+button_a = 5
+button_b = 4
+
 state_player = {
 		get_ooi = function()
-				return isometric_coords(player.x, player.y)
+		  if (currentstate.controlled) then
+					 return isometric_coords(currentstate.controlled.x, currentstate.controlled.y)
+			 else
+			   return {x = 1,y = 1}
+				end
+				
 		end,
 		process_input = function()
-		  newplayer = movebound(player, maxx - 1, maxy - 1)
+		  newplayer = movebound(currentstate.controlled, maxx - 1, maxy - 1)
 		  
-		  if (btnp(5)) then currentstate = state_marker end
+		  if (btnp(button_a)) then currentstate = state_marker end
 
 			 newheight = getroomheight(newplayer.x, newplayer.y)
 			 
-	  	if (newheight != 0) then
-	  	  player.x = newplayer.x
-	  	  player.y = newplayer.y
-	  	  player.facing = newplayer.facing
+	  	if (newheight != 0 and currentstate.controlled) then
+	  	  currentstate.controlled.x = newplayer.x
+	  	  currentstate.controlled.y = newplayer.y
+	  	  currentstate.controlled.facing = newplayer.facing
 	  	end
 		end,
+		controlled = nil,
 		name = "player"
 }
 
@@ -35,9 +44,11 @@ state_marker = {
 				return isometric_coords(marker.x, marker.y)
 		end,
 		process_input = function()
-				if (btnp(4)) then 
-				  if (marker.x == player.x and marker.y == player.y) then
+				if (btnp(button_b)) then
+					 foundunit = getunitincell(marker.x, marker.y)
+				  if (foundunit) then
 				  		currentstate = state_player
+				  		currentstate.controlled = foundunit
 				  else
 				    marker.x = player.x
 				    marker.y = player.y
@@ -96,16 +107,18 @@ units = {}
 add(units, player)
 add(units, {
 		x = 2,
-		y = 3,
+		y = 2,
 		move = 2,
+		own = true,
 		facing = 0,
 		colr = 3
 })
 
 add(units, {
 		x = 0,
-		y = 3,
+		y = 1,
 		move = 2,
+		own = false,
 		facing = 1,
 		colr = 1
 })
@@ -128,6 +141,7 @@ ooi = {
 
 modal = 1
 currentstate = state_player
+currentstate.controlled = player
 
 -- camera object
 cam = {
@@ -141,18 +155,6 @@ marker = {
 }
 
 headings = {"ul", "dr", "ur", "dl"}
-
-//room = {
-//	"0000xx77776600000",
-//	"0000xx766x5500000",
-//	"00000065555500000",
-// "00000055555500000",
-//	"6666655ww45000000",
-//	"6666665w440000000",
-// "66666644444444443",
-//	"66666644444444333",
-//	"00000004444444333"
-//}
 
 room = {
  "7777777",
@@ -216,7 +218,6 @@ function _draw()
 
 	 if (units) then
   	 qsort(units, zordercompare)
-  	 newheight = #units
 	 end
 	 
   for unit in all(units) do
@@ -349,7 +350,7 @@ function getheading(direction)
 end
 
 function zordercompare(a, b)
-  if (a.x + a.y) > (b.x + b.y) then
+  if (a.x + a.y) < (b.x + b.y) then
   	 return -1
   end
   return 1
@@ -372,6 +373,14 @@ function qsort(t, cmp, i, j)
  end
 end
 
+function getunitincell(x, y)
+  for unit in all(units) do
+    if (unit.x == x and unit.y == y) then 
+    		return unit
+    end
+  end
+  return nil
+end
 __gfx__
 000000000055550000555500b3b3333bb3bb3b3b4555549ab14654565545969300eeeeeeeeeeeeeeeeeeeeeeeeeeeeee22b23223a3aa3a3a0000000000000000
 00000000005fff0000fff50033334413b333bb334114549ad5145445411455553900eeeeeeeeeeeeeeeee0eeee0eeeee2232322baba3aaba0000000000000000
